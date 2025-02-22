@@ -2,7 +2,7 @@
 import mysql.connector
 from mysql.connector import Error
 
-def create_connection():fvbj
+def create_connection():
     host = "192.168.29.55"
     user = "remote_user"
     password = "securepassword"
