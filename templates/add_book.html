@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add a Book</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Add a New Book</h1>
+        <nav>
+            <a href="{{ url_for('app_routes.home') }}">Home</a>
+            <a href="{{ url_for('app_routes.view_books') }}">View Books</a>
+        </nav>
+    </header>
+    <main>
+        <form method="POST" action="{{ url_for('app_routes.add_book') }}">
+            <label>Book ID:</label>
+            <input type="text" name="book_id" required><br>
+            
+            <label>Title:</label>
+            <input type="text" name="title" required><br>
+
+            <label>Author:</label>
+            <input type="text" name="author" required><br>
+
+            <label>Year Published:</label>
+            <input type="number" name="year_published" required><br>
+
+            <label>Genre:</label>
+            <input type="text" name="genre" required><br>
+
+            <label>Available Copies:</label>
+            <input type="number" name="available_copies" required><br>
+
+            <button type="submit">Add Book</button>
+        </form>
+    </main>
+</body>
+</html>
