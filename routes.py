@@ -20,7 +20,12 @@ def view_books():
 @app_routes.route('/add_book', methods=['GET', 'POST'])
 def add_book():
     if request.method == 'POST':
-        book_id = request.form['book_id']
+        try:
+            book_id = int(request.form['book_id'])  # ✅ Convert to integer
+        except ValueError:
+            flash("Error: Book ID must be a number!", "danger")
+            return redirect(url_for('app_routes.add_book'))  # Redirect to fix input
+
         title = request.form['title']
         author = request.form['author']
         year_published = request.form['year_published']
@@ -39,3 +44,4 @@ def add_book():
         return redirect(url_for('app_routes.view_books'))
     
     return render_template("add_book.html")
+
