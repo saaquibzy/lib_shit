@@ -1,24 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Books List</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <header>
-        <h1>Books in the Library</h1>
-        <nav>
-            <a href="{{ url_for('app_routes.home') }}">Home</a>
-            <a href="{{ url_for('app_routes.add_book') }}">Add Book</a>
-        </nav>
-    </header>
-    <main>
-        <table border="1">
+{% extends "base.html" %}
+
+{% block title %}View Books{% endblock %}
+
+{% block content %}
+    <h1 class="text-center mb-4">📚 Books in the Library</h1>
+
+    <table class="table table-hover table-bordered">
+        <thead class="table-dark">
             <tr>
-                <th>ID</th><th>Title</th><th>Author</th><th>Year</th><th>Genre</th><th>Available Copies</th>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Year</th>
+                <th>Genre</th>
+                <th>Copies</th>
+                <th>Actions</th>
             </tr>
+        </thead>
+        <tbody>
             {% for book in books %}
             <tr>
                 <td>{{ book[0] }}</td>
@@ -27,9 +26,23 @@
                 <td>{{ book[3] }}</td>
                 <td>{{ book[4] }}</td>
                 <td>{{ book[5] }}</td>
+                <td>
+                    <a href="{{ url_for('app_routes.update_book', book_id=book[0]) }}" class="btn btn-warning btn-sm">✏️ Edit</a>
+                    <a href="{{ url_for('app_routes.delete_book', book_id=book[0]) }}" 
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Are you sure you want to delete {{ book[1] }}?');">
+                       🗑️ Delete
+                    </a>
+                </td>
+                
             </tr>
             {% endfor %}
-        </table>
-    </main>
-</body>
-</html>
+        </tbody>
+    </table>
+
+    <div class="text-center">
+        <a href="{{ url_for('app_routes.add_book') }}" class="btn btn-primary">➕ Add New Book</a>
+        <a href="{{ url_for('app_routes.options') }}" class="btn btn-secondary">Back to Menu</a>
+    </div>
+
+{% endblock %}

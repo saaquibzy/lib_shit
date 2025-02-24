@@ -1,5 +1,6 @@
 import mysql.connector
-from test_connection import create_connection
+from database import create_connection  # ✅ Use database.py instead
+
 import hashlib  # For password hashin
 
 # Function to hash passwords (for security)

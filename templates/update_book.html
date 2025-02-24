@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Update Book{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <h2 class="text-center">✏️ Update Book</h2>
+        
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">Book ID (Read-only):</label>
+                <input type="text" class="form-control" name="book_id" value="{{ book[0] }}" readonly>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Title:</label>
+                <input type="text" class="form-control" name="title" value="{{ book[1] }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Author:</label>
+                <input type="text" class="form-control" name="author" value="{{ book[2] }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Year Published:</label>
+                <input type="number" class="form-control" name="year_published" value="{{ book[3] }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Genre:</label>
+                <input type="text" class="form-control" name="genre" value="{{ book[4] }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Available Copies:</label>
+                <input type="number" class="form-control" name="available_copies" value="{{ book[5] }}" required>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100">Update Book</button>
+        </form>
+    </div>
+{% endblock %}

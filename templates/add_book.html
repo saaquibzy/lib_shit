@@ -3,39 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add a Book</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Add Book</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
-<body>
-    <header>
-        <h1>Add a New Book</h1>
-        <nav>
-            <a href="{{ url_for('app_routes.home') }}">Home</a>
-            <a href="{{ url_for('app_routes.view_books') }}">View Books</a>
-        </nav>
-    </header>
-    <main>
-        <form method="POST" action="{{ url_for('app_routes.add_book') }}">
-            <label>Book ID:</label>
-            <input type="number" name="book_id" required><br>
-            
-            <label>Title:</label>
-            <input type="text" name="title" required><br>
+<body class="container mt-5">
+    
+    <div class="card p-4 shadow-lg">
+        <h2 class="text-center">Add a New Book</h2>
 
-            <label>Author:</label>
-            <input type="text" name="author" required><br>
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">Book ID:</label>
+                <input type="number" class="form-control" name="book_id" required>
+            </div>
 
-            <label>Year Published:</label>
-            <input type="number" name="year_published" required><br>
+            <div class="mb-3">
+                <label class="form-label">Title:</label>
+                <input type="text" class="form-control" name="title" required>
+            </div>
 
-            <label>Genre:</label>
-            <input type="text" name="genre" required><br>
+            <div class="mb-3">
+                <label class="form-label">Author:</label>
+                <input type="text" class="form-control" name="author" required>
+            </div>
 
-            <label>Available Copies:</label>
-            <input type="number" name="available_copies" required><br>
+            <div class="mb-3">
+                <label class="form-label">Year Published:</label>
+                <input type="number" class="form-control" name="year_published" required>
+            </div>
 
-            <button type="submit">Add Book</button>
+            <div class="mb-3">
+                <label class="form-label">Genre:</label>
+                <input type="text" class="form-control" name="genre" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Available Copies:</label>
+                <input type="number" class="form-control" name="available_copies" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Add Book</button>
         </form>
-    </main>
+    </div>
+
 </body>
 </html>

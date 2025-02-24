@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+    <h1 class="text-center">🎯 Dashboard</h1>
+    <p class="text-center">Choose an option:</p>
+
+    <div class="d-flex flex-wrap justify-content-center gap-3">
+        <a href="{{ url_for('app_routes.add_book') }}" class="btn btn-primary">➕ Add Book</a>
+        <a href="{{ url_for('app_routes.view_books') }}" class="btn btn-success">📚 View Books</a>
+        <a href="{{ url_for('app_routes.search_books') }}" class="btn btn-info">🔍 Search Books</a>
+        <a href="{{ url_for('app_routes.sort_books') }}" class="btn btn-secondary">🔄 Sort Books</a>
+        <a href="{{ url_for('app_routes.logout') }}" class="btn btn-dark">🚪 Logout</a>
+    </div>
+{% endblock %}

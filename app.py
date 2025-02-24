@@ -1,5 +1,5 @@
 from flask import Flask
-from routes import app_routes  # Import routes
+from routes import app_routes
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Needed for flash messages
