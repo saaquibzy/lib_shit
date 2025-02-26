@@ -4,14 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Library Management{% endblock %}</title>
-    
+
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 
-    <!-- Link to custom CSS file -->
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Link to Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3"></div>
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -23,8 +34,16 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('app_routes.view_books') }}">View Books</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('app_routes.add_book') }}">Add Book</a></li>
-                    <li class="nav-item"><a class="nav-link text-danger" href="{{ url_for('app_routes.logout') }}">Logout</a></li>
+                    {% if 'user' in session %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('app_routes.add_book') }}">➕ Add Book</a></li>
+                        <li class="nav-item"><a class="nav-link text-danger" href="{{ url_for('app_routes.logout') }}">Logout</a></li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('app_routes.register') }}">📝 Register</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('app_routes.login') }}">🔑 Login</a></li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <button id="darkModeToggle" class="btn btn-sm btn-light">🌙 Dark Mode</button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -33,6 +52,51 @@
     <div class="container mt-4">
         {% block content %}{% endblock %}
     </div>
+
+    <!-- JavaScript -->
+    <script>
+        // === Loading Animation ===
+        window.onload = function() {
+            document.getElementById("loadingSpinner").style.display = "none";
+        };
+
+        // === Toast Notifications ===
+        function showToast(message, type = "success") {
+            let toastContainer = document.getElementById("toastContainer");
+            let toast = document.createElement("div");
+            toast.className = `toast align-items-center text-bg-${type} border-0 show`;
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
+        }
+
+        // === Confirmation Popups (Before Deleting Books) ===
+        function confirmDelete(bookTitle) {
+            return confirm(`Are you sure you want to delete "${bookTitle}"?`);
+        }
+
+        // === Dark Mode with Animation ===
+        document.addEventListener("DOMContentLoaded", function() {
+            const darkModeToggle = document.getElementById("darkModeToggle");
+            const body = document.body;
+
+            if (localStorage.getItem("darkMode") === "enabled") {
+                body.classList.add("dark-mode");
+                darkModeToggle.textContent = "☀️ Light Mode";
+            }
+
+            darkModeToggle.addEventListener("click", function() {
+                body.classList.toggle("dark-mode");
+                localStorage.setItem("darkMode", body.classList.contains("dark-mode") ? "enabled" : "disabled");
+                darkModeToggle.textContent = body.classList.contains("dark-mode") ? "☀️ Light Mode" : "🌙 Dark Mode";
+            });
+        });
+    </script>
 
 </body>
 </html>

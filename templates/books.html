@@ -3,46 +3,147 @@
 {% block title %}View Books{% endblock %}
 
 {% block content %}
-    <h1 class="text-center mb-4">📚 Books in the Library</h1>
+    <h1 class="text-center">📚 Books in the Library</h1>
 
-    <table class="table table-hover table-bordered">
+    <!-- Navbar with Add Book Button -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3">
+        <div class="container-fluid">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('app_routes.options') }}">🏠 Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('app_routes.view_books') }}">📚 View Books</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('app_routes.add_book') }}">➕ Add Book</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Search and Sorting Controls -->
+    <div class="d-flex justify-content-between mb-3">
+        <form action="{{ url_for('app_routes.search_books') }}" method="GET" class="d-flex w-50">
+            <input type="text" name="query" class="form-control" placeholder="🔍 Search for books..." required>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+
+        <!-- Sorting Dropdown -->
+        <select id="sortBooks" class="form-select w-25" onchange="sortBooks(this.value)">
+            <option disabled selected>Sort by...</option>
+            <option value="title">Title</option>
+            <option value="author">Author</option>
+            <option value="year_published">Year Published</option>
+            <option value="available_copies">Available Copies</option>
+        </select>
+
+        <script>
+            function sortBooks(sortBy) {
+                window.location.href = "{{ url_for('app_routes.sort_books') }}?sort_by=" + sortBy;
+            }
+        </script>
+
+        <button onclick="exportCSV()" class="btn btn-success">📂 Export CSV</button>
+        <button onclick="exportPDF()" class="btn btn-danger">📄 Export PDF</button>
+    </div>
+
+    <!-- Books Table -->
+    <table class="table table-hover table-bordered" id="booksTable">
         <thead class="table-dark">
             <tr>
                 <th>ID</th>
+                <th>Cover</th>
                 <th>Title</th>
                 <th>Author</th>
                 <th>Year</th>
                 <th>Genre</th>
-                <th>Copies</th>
+                <th>Available Copies</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="bookList">
             {% for book in books %}
             <tr>
                 <td>{{ book[0] }}</td>
+                <td>
+                    {% if book[6] %}
+                        <img src="{{ url_for('static', filename='uploads/' + book[6]) }}" 
+                             alt="Book Cover" width="50" height="70" style="border-radius: 5px;">
+                    {% else %}
+                        <span>No Image</span>
+                    {% endif %}
+                </td>
                 <td>{{ book[1] }}</td>
                 <td>{{ book[2] }}</td>
                 <td>{{ book[3] }}</td>
                 <td>{{ book[4] }}</td>
                 <td>{{ book[5] }}</td>
+                <td>{% if book[5] > 0 %} ✅ Available {% else %} ❌ Borrowed {% endif %}</td>
                 <td>
                     <a href="{{ url_for('app_routes.update_book', book_id=book[0]) }}" class="btn btn-warning btn-sm">✏️ Edit</a>
                     <a href="{{ url_for('app_routes.delete_book', book_id=book[0]) }}" 
                        class="btn btn-danger btn-sm"
-                       onclick="return confirm('Are you sure you want to delete {{ book[1] }}?');">
+                       onclick="return confirmDelete('{{ book[1] }}');">
                        🗑️ Delete
                     </a>
                 </td>
-                
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <div class="text-center">
+    <!-- Pagination Controls -->
+    <div class="d-flex justify-content-between">
+        <button id="prevPage" class="btn btn-secondary">⬅️ Previous</button>
+        <button id="nextPage" class="btn btn-secondary">Next ➡️</button>
+    </div>
+
+    <div class="text-center mt-3">
         <a href="{{ url_for('app_routes.add_book') }}" class="btn btn-primary">➕ Add New Book</a>
         <a href="{{ url_for('app_routes.options') }}" class="btn btn-secondary">Back to Menu</a>
     </div>
+
+    <!-- JavaScript for Features -->
+    <script>
+        function confirmDelete(bookTitle) {
+            return confirm(`Are you sure you want to delete "${bookTitle}"?`);
+        }
+
+        function exportCSV() {
+            let table = document.getElementById("booksTable");
+            let rows = Array.from(table.rows).map(row => 
+                Array.from(row.cells).map(cell => cell.innerText).join(",")
+            ).join("\n");
+
+            let blob = new Blob([rows], { type: "text/csv" });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "books.csv";
+            link.click();
+        }
+
+        function exportPDF() {
+            let pdf = new jsPDF();
+            pdf.text("Library Book List", 10, 10);
+            pdf.autoTable({ html: "#booksTable" });
+            pdf.save("books.pdf");
+        }
+
+        let currentPage = 0;
+        const rowsPerPage = 5;
+        function paginate() {
+            let rows = document.querySelectorAll("#bookList tr");
+            rows.forEach((row, index) => {
+                row.style.display = index >= currentPage * rowsPerPage && index < (currentPage + 1) * rowsPerPage ? "" : "none";
+            });
+        }
+
+        document.getElementById("prevPage").addEventListener("click", function () {
+            if (currentPage > 0) { currentPage--; paginate(); }
+        });
+
+        document.getElementById("nextPage").addEventListener("click", function () {
+            let rows = document.querySelectorAll("#bookList tr");
+            if ((currentPage + 1) * rowsPerPage < rows.length) { currentPage++; paginate(); }
+        });
+
+        paginate();
+    </script>
 
 {% endblock %}

@@ -1,15 +1,31 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from database import create_connection
+from database import create_connection, authenticate_user, register_user, is_admin
 import hashlib  # For password hashing
 
 app_routes = Blueprint('app_routes', __name__)
-@app_routes.route('/')
-def home():
-    return redirect(url_for('app_routes.options'))  # Redirect to options page
 
 # ✅ Hash Passwords
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
+
+# ✅ Home (Redirect to options)
+@app_routes.route('/')
+def home():
+    return redirect(url_for('app_routes.options'))
+
+# ✅ Register Route
+@app_routes.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+
+        register_user(username, email, password)  # Register in database
+        flash("✅ Account created! Please log in.", "success")
+        return redirect(url_for('app_routes.login'))
+
+    return render_template("register.html")
 
 # ✅ Login Route
 @app_routes.route('/login', methods=['GET', 'POST'])
@@ -22,19 +38,31 @@ def login():
         password = request.form['password']
         hashed_password = hash_password(password)
 
+        print(f"🔍 DEBUG: Trying to log in with Username: {username}")
+        print(f"🔍 DEBUG: Entered Password (Hashed): {hashed_password}")
+
         connection = create_connection()
         cursor = connection.cursor()
-        cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, hashed_password))
+        cursor.execute("SELECT username, password, role FROM users WHERE username = %s", (username,))
         user = cursor.fetchone()
-        cursor.close()
-        connection.close()
 
         if user:
-            session['user'] = username
-            flash("Login successful!", "success")
-            return redirect(url_for('app_routes.options'))
+            stored_hashed_password = user[1]
+            print(f"🔍 DEBUG: Stored Password in DB: {stored_hashed_password}")
+
+            if hashed_password == stored_hashed_password:
+                print(f"✅ DEBUG: Login successful for {username}!")
+                session['user'] = username
+                session['role'] = user[2]  # Assuming role is at index 2
+                flash("✅ Login successful!", "success")
+                return redirect(url_for('app_routes.options'))
+            else:
+                print(f"❌ DEBUG: Password mismatch for {username}!")
+
         else:
-            flash("Invalid username or password.", "danger")
+            print(f"❌ DEBUG: No user found with username {username}!")
+
+        flash("❌ Invalid username or password.", "danger")
 
     return render_template("login.html")
 
@@ -42,15 +70,24 @@ def login():
 @app_routes.route('/logout')
 def logout():
     session.pop('user', None)
-    flash("Logged out successfully!", "info")
+    session.pop('role', None)
+    flash("✅ Logged out successfully!", "info")
     return redirect(url_for('app_routes.login'))
+
+# ✅ Profile Page
+@app_routes.route('/profile')
+def profile():
+    if 'user' not in session:
+        return redirect(url_for('app_routes.login'))
+
+    return render_template("profile.html", username=session['user'], role=session.get('role', 'user'))
 
 # ✅ Options Page
 @app_routes.route('/options')
 def options():
     if 'user' not in session:
         return redirect(url_for('app_routes.login'))
-    
+
     return render_template("options.html")
 
 # ✅ View Books
@@ -63,20 +100,69 @@ def view_books():
     cursor = connection.cursor()
     cursor.execute("SELECT * FROM books")
     books = cursor.fetchall()
-    
-    # Debugging: Print books in the terminal
-    print("DEBUG: Books fetched from database:", books)
-    
     cursor.close()
     connection.close()
 
     return render_template("books.html", books=books)
 
-# ✅ Add Book
+# ✅ Search Books
+@app_routes.route('/search_books', methods=['GET'])
+def search_books():
+    if 'user' not in session:
+        return redirect(url_for('app_routes.login'))
+
+    query = request.args.get('query', '')
+
+    connection = create_connection()
+    cursor = connection.cursor()
+    
+    cursor.execute("""
+        SELECT * FROM books 
+        WHERE title LIKE %s OR author LIKE %s OR genre LIKE %s
+    """, (f"%{query}%", f"%{query}%", f"%{query}%"))
+    
+    books = cursor.fetchall()
+    cursor.close()
+    connection.close()
+
+    if not books:
+        flash("❌ No books found matching your search.", "warning")
+
+    return render_template("books.html", books=books, search_query=query)
+
+# ✅ Sort Books
+@app_routes.route('/sort_books', methods=['GET'])
+def sort_books():
+    if 'user' not in session:
+        return redirect(url_for('app_routes.login'))
+
+    sort_by = request.args.get('sort_by', 'year_published')
+
+    allowed_columns = ["title", "author", "year_published", "available_copies"]
+    if sort_by not in allowed_columns:
+        flash("⚠️ Invalid sorting option!", "danger")
+        return redirect(url_for('app_routes.view_books'))
+
+    connection = create_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(f"SELECT * FROM books ORDER BY {sort_by} ASC")
+    
+    books = cursor.fetchall()
+    cursor.close()
+    connection.close()
+
+    return render_template("books.html", books=books, sort_by=sort_by)
+
+# ✅ Add Book (Admin Only)
 @app_routes.route('/add_book', methods=['GET', 'POST'])
 def add_book():
     if 'user' not in session:
         return redirect(url_for('app_routes.login'))
+
+    if session.get('role') != 'admin':
+        flash("❌ Access denied! Only admins can add books.", "danger")
+        return redirect(url_for('app_routes.view_books'))
 
     if request.method == 'POST':
         try:
@@ -97,18 +183,22 @@ def add_book():
             cursor.close()
             connection.close()
 
-            flash("Book added successfully!", "success")
+            flash("✅ Book added successfully!", "success")
             return redirect(url_for('app_routes.view_books'))
         except Exception as e:
-            flash(f"Error: {e}", "danger")
+            flash(f"⚠️ Error: {e}", "danger")
 
     return render_template("add_book.html")
 
-# ✅ Update Book
+# ✅ Update Book (Admin Only)
 @app_routes.route('/update_book/<int:book_id>', methods=['GET', 'POST'])
 def update_book(book_id):
     if 'user' not in session:
         return redirect(url_for('app_routes.login'))
+
+    if session.get('role') != 'admin':
+        flash("❌ Access denied! Only admins can update books.", "danger")
+        return redirect(url_for('app_routes.view_books'))
 
     connection = create_connection()
     cursor = connection.cursor()
@@ -127,8 +217,7 @@ def update_book(book_id):
         """
         cursor.execute(update_query, (title, author, year_published, genre, available_copies, book_id))
         connection.commit()
-
-        flash(f"Book with ID {book_id} updated successfully.", "success")
+        flash(f"✅ Book with ID {book_id} updated successfully.", "success")
         return redirect(url_for('app_routes.view_books'))
 
     else:
@@ -141,60 +230,25 @@ def update_book(book_id):
         if book:
             return render_template("update_book.html", book=book)
         else:
-            flash("Book not found.", "danger")
+            flash("❌ Book not found.", "danger")
             return redirect(url_for('app_routes.view_books'))
 
-# ✅ Delete Book
+# ✅ Delete Book (Admin Only)
 @app_routes.route('/delete_book/<int:book_id>')
 def delete_book(book_id):
     if 'user' not in session:
         return redirect(url_for('app_routes.login'))
+    
+    if session.get('role') != 'admin':
+        flash("❌ Access denied! Only admins can delete books.", "danger")
+        return redirect(url_for('app_routes.view_books'))
 
     connection = create_connection()
     cursor = connection.cursor()
-    
-    # Delete the book
     cursor.execute("DELETE FROM books WHERE id = %s", (book_id,))
     connection.commit()
-
     cursor.close()
     connection.close()
 
-    flash(f"Book with ID {book_id} deleted successfully.", "success")
+    flash(f"✅ Book with ID {book_id} deleted successfully.", "success")
     return redirect(url_for('app_routes.view_books'))
-
-
-# ✅ Search Books
-@app_routes.route('/search_books', methods=['GET', 'POST'])
-def search_books():
-    if 'user' not in session:
-        return redirect(url_for('app_routes.login'))
-
-    query = request.args.get('query', '')
-
-    connection = create_connection()
-    cursor = connection.cursor()
-    cursor.execute("SELECT * FROM books WHERE title LIKE %s OR author LIKE %s OR genre LIKE %s",
-                   (f"%{query}%", f"%{query}%", f"%{query}%"))
-    books = cursor.fetchall()
-    cursor.close()
-    connection.close()
-
-    return render_template("books.html", books=books, search_query=query)
-
-# ✅ Sort Books
-@app_routes.route('/sort_books', methods=['GET'])
-def sort_books():
-    if 'user' not in session:
-        return redirect(url_for('app_routes.login'))
-
-    sort_by = request.args.get('sort_by', 'year_published')
-
-    connection = create_connection()
-    cursor = connection.cursor()
-    cursor.execute(f"SELECT * FROM books ORDER BY {sort_by}")
-    books = cursor.fetchall()
-    cursor.close()
-    connection.close()
-
-    return render_template("books.html", books=books)
